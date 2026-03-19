@@ -1,9 +1,10 @@
-#include "edBankFiler.h"
+#include "edBank/edBankFiler.h"
 
-#include "edBankFile.h"
-#include "edFile.h"
-#include "edFilePath.h"
+#include "edBank/edBankFile.h"
+#include "edFile/edFile.h"
+#include "edFile/edFilePath.h"
 #include "edStr.h"
+#include "edFile/edFileNoWaitStack.h"
 
 CFilerBank FilerBank;
 
@@ -25,50 +26,50 @@ CFilerBank::CFilerBank()
 	return;
 }
 
-bool CFilerBank::isnowaitcmdend(edCFiler_28_Internal* pEdFilerInternal)
+bool CFilerBank::isnowaitcmdend(edFILE_STACK_ELEMENT* pElement)
 {
 	edFILEH* pDebugBankData;
 	edFILEH* pDVar1;
 	edCFiler* peVar2;
 	EBankAction EVar3;
-	bool bVar4;
+	bool bSuccess;
 	edCFiler_BNK_8* pCVar4;
 	long lVar5;
 	byte* pbVar6;
 	int iVar7;
 
-	pDebugBankData = pEdFilerInternal->pDataBank;
+	pDebugBankData = reinterpret_cast<edFILEH*>(pElement->pData);
 	pCVar4 = (edCFiler_BNK_8*)GetInternalData_0025b2e0(pDebugBankData);
 	if (pCVar4 == (edCFiler_BNK_8*)0x0) {
-		bVar4 = false;
+		bSuccess = false;
 	}
 	else {
 		pDVar1 = pCVar4->pDebugBankData;
 		peVar2 = pDVar1->pOwningFiler;
-		pDVar1->action = pEdFilerInternal->nextAction;
-		EVar3 = pEdFilerInternal->nextAction;
-		if (((EVar3 == BANK_ACTION_3) || (EVar3 == READ_STREAM)) || (bVar4 = true, EVar3 == SEEK)) {
-			pEdFilerInternal->pDataBank = pDVar1;
-			lVar5 = peVar2->isnowaitcmdend(pEdFilerInternal);
+		pDVar1->action = pElement->action;
+		EVar3 = pElement->action;
+		if (((EVar3 == EBankAction::WRITE) || (EVar3 == EBankAction::READ)) || (bSuccess = true, EVar3 == EBankAction::SEEK)) {
+			pElement->pData = pDVar1;
+			lVar5 = peVar2->isnowaitcmdend(pElement);
 			if (lVar5 == 0) {
-				pEdFilerInternal->pDataBank = pDebugBankData;
-				bVar4 = false;
+				pElement->pData = pDebugBankData;
+				bSuccess = false;
 			}
 			else {
-				pEdFilerInternal->pDataBank = pDebugBankData;
-				bVar4 = true;
+				pElement->pData = pDebugBankData;
+				bSuccess = true;
 			}
 		}
 		else {
-			if (EVar3 == CLOSE) {
-				pEdFilerInternal->pDataBank = pDVar1;
-				lVar5 = peVar2->isnowaitcmdend(pEdFilerInternal);
+			if (EVar3 == EBankAction::CLOSE) {
+				pElement->pData = pDVar1;
+				lVar5 = peVar2->isnowaitcmdend(pElement);
 				if (lVar5 == 0) {
-					pEdFilerInternal->pDataBank = pDebugBankData;
-					bVar4 = false;
+					pElement->pData = pDebugBankData;
+					bSuccess = false;
 				}
 				else {
-					pEdFilerInternal->pDataBank = pDebugBankData;
+					pElement->pData = pDebugBankData;
 					iVar7 = 0;
 					do {
 						if (&field_0x218[iVar7] == pCVar4) {
@@ -87,12 +88,13 @@ bool CFilerBank::isnowaitcmdend(edCFiler_28_Internal* pEdFilerInternal)
 						}
 						iVar7 = iVar7 + 1;
 					} while (iVar7 < 0x10);
-					bVar4 = true;
+					bSuccess = true;
 				}
 			}
 		}
 	}
-	return bVar4;
+
+	return bSuccess;
 }
 
 bool CFilerBank::seek(edFILEH* pDebugBank)
@@ -118,20 +120,20 @@ bool CFilerBank::seek(edFILEH* pDebugBank)
 	return uVar1;
 }
 
-uint CFilerBank::read(edFILEH* pDebugBank, char* destination, uint requiredSize)
+uint CFilerBank::read(edFILEH* pFile, void* pDst, uint requiredSize)
 {
 	edCFiler* peVar1;
 	edCFiler_BNK_8* ppiVar2;
 	uint uVar2;
 
-	ppiVar2 = (edCFiler_BNK_8*)GetInternalData_0025b2e0(pDebugBank);
+	ppiVar2 = (edCFiler_BNK_8*)GetInternalData_0025b2e0(pFile);
 	if (ppiVar2 == (edCFiler_BNK_8*)0x0) {
 		uVar2 = 0;
 	}
 	else {
-		if (requiredSize == (pDebugBank->field_0x10).fileSize) {
+		if (requiredSize == (pFile->fileInfo).fileSize) {
 			peVar1 = ppiVar2->pDebugBankData->pOwningFiler;
-			uVar2 = peVar1->read(ppiVar2->pDebugBankData, destination, requiredSize);
+			uVar2 = peVar1->read(ppiVar2->pDebugBankData, pDst, requiredSize);
 		}
 		else {
 			uVar2 = 0;
@@ -140,6 +142,7 @@ uint CFilerBank::read(edFILEH* pDebugBank, char* destination, uint requiredSize)
 	return uVar2;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFiler.cpp
 bool CFilerBank::close(edFILEH* pDebugBank)
 {
 	edCFiler* peVar1;
@@ -190,7 +193,7 @@ bool CFilerBank::open(edFILEH* pOutData, char* filePath)
 		/* Look to see if we already loaded the file. */
 		pAlreadyLoadedData = BnkUnitTable;
 		do {
-			iVar2 = edStrICmp((byte*)pAlreadyLoadedData->path, (byte*)acStack512);
+			iVar2 = edStrICmp(pAlreadyLoadedData->path, acStack512);
 			if (iVar2 == 0) goto LAB_00247280;
 			iVar4 = iVar4 + 1;
 			pAlreadyLoadedData = pAlreadyLoadedData + 1;
@@ -248,13 +251,13 @@ bool CFilerBank::open(edFILEH* pOutData, char* filePath)
 					}
 					else {
 						bufferStart->pFileData = puVar6;
-						memset(&pOutData->field_0x10, 0, sizeof(DebugBankDataInternal));
+						memset(&pOutData->fileInfo, 0, sizeof(edFILE_INFO));
 						pcVar3 = edFilePathGetFilePath(filePath);
-						edStrCopy((pOutData->field_0x10).name, pcVar3 + 1);
+						edStrCopy((pOutData->fileInfo).name, pcVar3 + 1);
 						bVar1 = true;
-						(pOutData->field_0x10).field_0x14 = 0x21;
-						(pOutData->field_0x10).fileSize = bufferStart->pFileData->size;
-						pOutData->pFileData = (CDFileContainer*)bufferStart;
+						(pOutData->fileInfo).flags = 0x21;
+						(pOutData->fileInfo).fileSize = bufferStart->pFileData->size;
+						pOutData->pFileData = bufferStart;
 					}
 				}
 			}
@@ -307,7 +310,7 @@ bool CFilerBank::mount_unit(char* filePath, char* bankPath)
 		/* Check if the bank is already loaded. */
 		peVar5 = BnkUnitTable;
 		do {
-			iVar2 = edStrICmp((byte*)peVar5->path, (byte*)formattedPath);
+			iVar2 = edStrICmp(peVar5->path, formattedPath);
 			if (iVar2 == 0) goto LAB_002475e0;
 			iVar4 = iVar4 + 1;
 			peVar5 = peVar5 + 1;
@@ -342,21 +345,24 @@ bool CFilerBank::mount_unit(char* filePath, char* bankPath)
 }
 
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFiler.cpp
 bool CFilerBank::terminate()
 {
 	return true;
 }
 
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFiler.cpp
 bool CFilerBank::initialize()
 {
 	/* <BNK> */
 	this->pDriveName_0x0 = "<BNK>";
-	this->field_0x4 = 1;
+	this->flags = 1;
 	this->set_default_unit("0:");
 	return true;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFiler.cpp
 void edBankFilerRemove(void)
 {
 	// TODO 
@@ -364,12 +370,13 @@ void edBankFilerRemove(void)
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFiler.cpp
 void edBankFilerInstall(void)
 {
 	edFilerList.add_filer(&FilerBank);
 	/* <BNK> */
 	FilerBank.pDriveName_0x0 = "<BNK>";
-	FilerBank.field_0x4 = 1;
+	FilerBank.flags = 1;
 	FilerBank.set_default_unit("0:");
 	return;
 }

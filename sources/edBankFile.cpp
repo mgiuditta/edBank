@@ -1,6 +1,6 @@
-#include "edBankFile.h"
+#include "edBank/edBankFile.h"
 
-#include "edFile.h"
+#include "edFile/edFile.h"
 
 #ifdef PLATFORM_WIN
 #include "port.h"
@@ -83,11 +83,13 @@ char* edBankFilerReadHeader(EHeap heapID, char* filePath, uint flags, edFILEH** 
 	return __dest;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFile.cpp
 void edCBankFileHeader::analyse()
 {
 
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFile.cpp
 void edCBankFileHeader::unpack()
 {
 	int iVar1;
@@ -396,6 +398,7 @@ FileTypeData* edCBankFileHeader::get_entry_typepair(int inFileIndex)
 	return pFVar2;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankFile.cpp
 bool edCBankFileHeader::is_heterogeneous()
 {
 	bool bVar1;

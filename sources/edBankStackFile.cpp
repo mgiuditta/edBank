@@ -1,11 +1,11 @@
-#include "edBankStackFile.h"
+#include "edBank/edBankStackFile.h"
 
 #include <string.h>
 
-#include "edBankFile.h"
-#include "edFile.h"
+#include "edBank/edBankFile.h"
+#include "edFile/edFile.h"
 #include "EdenLib/edSys/sources/EdSystem.h"
-#include "edBankBuffer.h"
+#include "edBank/edBankBuffer.h"
 
 edCBankStack edBankStack;
 
@@ -62,6 +62,7 @@ void edBankStackFileCallBack(int idA, int idB, char* pReadBuffer)
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankStackFile.cpp
 bool edCBankStack::add_file(edCBankStackElement* pInBank)
 {
 	int iVar1;
@@ -83,12 +84,14 @@ bool edCBankStack::add_file(edCBankStackElement* pInBank)
 	return iVar1 != 0xc;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankStackFile.cpp
 void edCBankStack::terminate()
 {
 	edSysHandlersRemove(edFileHandlers.nodeParent, edFileHandlers.entries, edFileHandlers.maxEventID, ED_HANDLER_FILE_READ, edBankStackFileCallBack);
 	memset(this, 0, sizeof(edCBankStack));
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankStackFile.cpp
 void edCBankStack::initialize()
 {
 	memset(this, 0, sizeof(edCBankStack));

@@ -1,9 +1,9 @@
-#include "edBankBuffer.h"
-#include "edBankFile.h"
-#include "edBankDebug.h"
-#include "edBankStackFile.h"
-#include "edBank.h"
-#include "edFile.h"
+#include "edBank/edBankBuffer.h"
+#include "edBank/edBankFile.h"
+#include "edBank/edBankDebug.h"
+#include "edBank/edBankStackFile.h"
+#include "edBank/edBank.h"
+#include "edFile/edFile.h"
 #include "edStr.h"
 
 const char* sz_CannotOpenFile_0042fc60 = "edCBankBufferEntry: Can't open file\n";
@@ -102,6 +102,7 @@ void edCBankBuffer::initialize(int size, int nbBankBufferEntries, edCBankInstall
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 void edCBankBuffer::bank_buffer_setcb(edCBankCallback* pNewBankCallback)
 {
 	this->pBankCallback = pNewBankCallback;
@@ -114,6 +115,7 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 	uint* puVar1;
 	edFILEH* pFile;
 	uint uVar2;
+	uint fileSize;
 	char* peVar3;
 	ulong uVar4;
 	uint uVar5;
@@ -143,7 +145,8 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 			edDebugPrintf(sz_CannotOpenFile_0042fc60);
 			return false;
 		}
-		uVar2 = edFileGetSize(pFile);
+
+		fileSize = edFileGetSize(pFile);
 	}
 	else {
 		if (pBankBufferEntry->headerComponent != 0) {
@@ -151,6 +154,7 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 			edDebugPrintf(sz_CannotReplaceHeader_0042fbf0);
 			return false;
 		}
+
 		IMPLEMENTATION_GUARD();
 		/* Dereference the input pointer to get the actual file path */
 		//uVar4 = SEXT48((int)filePathPtr->filePath);
@@ -168,9 +172,10 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 		//	return false;
 		//}
 	}
+
 	pBankBufferEntry->pObjectReference = pBankInstall->pObjectReference;
 	if ((param_4 == 0) || ((long)(int)pBankBufferEntry->pFileHeader == 0)) {
-		if ((uint)(this->size - this->flagB) < uVar2) {
+		if ((uint)(this->size - this->flagB) < fileSize) {
 			/* // edCBankBuffer: Not enough space in the bank buffer to add a bank \n */
 			edDebugPrintf("// edCBankBufferEntry: Not enough space in the bank buffer to add a bank \n");
 			return false;
@@ -189,7 +194,7 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 		pBankBufferEntry->pFileBuffer = pReadBuffer;
 		pBankBufferEntry->pFileHeader = reinterpret_cast<edCBankFileHeader*>(pReadBuffer + FILE_DATA_TAG_SIZE);
 		pBankBufferEntry->pFile = (edFILEH*)0x0;
-		pBankBufferEntry->field_0x14 = uVar2;
+		pBankBufferEntry->field_0x14 = fileSize;
 	}
 	else {
 		IMPLEMENTATION_GUARD();
@@ -211,7 +216,7 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 	edBankStack.add_file(&bankStackElement);
 
 	if (pBankInstall->fileFlagE == 0) {
-		this->flagB = this->flagB + uVar2;
+		this->flagB = this->flagB + fileSize;
 	}
 	else {
 		this->flagB = this->flagB + pBankInstall->fileFlagE;
@@ -221,7 +226,7 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 		edFileSeek(pFile, unaff_s7_lo, ED_SEEK_SET);
 	}
 
-	edFileRead(pFile, pReadBuffer, uVar2);
+	edFileRead(pFile, pReadBuffer, fileSize);
 
 	if (someFlag == false) {
 		edFileClose(pFile);
@@ -236,9 +241,11 @@ bool edCBankBuffer::file_access(edCBankBufferEntry* pBankBufferEntry, edCBankIns
 			accessFlag = pBankBufferEntry->accessFlag;
 		}
 	}
+
 	return true;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 void edCBankBufferEntry::wait()
 {
 	int iVar1;
@@ -256,11 +263,13 @@ void edCBankBufferEntry::wait()
 }
 
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 bool edCBankBufferEntry::is_loaded()
 {
 	return this->accessFlag == 0;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 void edCBankBuffer::terminate()
 {
 	edBankDebug.buffer_unlink(this);
@@ -276,6 +285,7 @@ void edCBankBuffer::terminate()
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 edCBankBufferEntry* edCBankBuffer::get_free_entry()
 {
 	edCBankBufferEntry* pFreeEntry;
@@ -392,6 +402,7 @@ int edCBankBufferEntry::get_index(const char* inFileName)
 }
 
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 int edCBankBufferEntry::get_element_count()
 {
 	int ret;
@@ -406,6 +417,7 @@ int edCBankBufferEntry::get_element_count()
 	return ret;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 bool edCBankBufferEntry::install(edCBankInstall* pBankInstall)
 {
 	int iVar1;
@@ -445,6 +457,7 @@ bool edCBankBufferEntry::install(edCBankInstall* pBankInstall)
 	return bSuccess;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 bool edCBankBufferEntry::close()
 {
 	int access;
@@ -493,6 +506,7 @@ bool edCBankBufferEntry::close()
 	return bSuccess;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankBuffer.cpp
 bool edCBankBufferEntry::load(edCBankInstall* pBankInstall)
 {
 	bool ret;

@@ -1,8 +1,9 @@
-#include "edBankDebug.h"
-#include "edBankBuffer.h"
+#include "edBank/edBankDebug.h"
+#include "edBank/edBankBuffer.h"
 
 edCBankDebug edBankDebug = { 1 };
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankDebug.cpp
 void edCBankDebug::buffer_link(edCBankBuffer* pBankBuffer)
 {
 	if (pBankBuffer != (edCBankBuffer*)0x0) {
@@ -33,6 +34,7 @@ void edCBankDebug::buffer_link(edCBankBuffer* pBankBuffer)
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBankDebug.cpp
 void edCBankDebug::buffer_unlink(edCBankBuffer* pBankBuffer)
 {
 	if (pBankBuffer != (edCBankBuffer*)0x0) {

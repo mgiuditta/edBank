@@ -1,11 +1,12 @@
-#include "edBank.h"
-#include "edBankFiler.h"
-#include "edBankStackFile.h"
+#include "edBank/edBank.h"
+#include "edBank/edBankFiler.h"
+#include "edBank/edBankStackFile.h"
 
 edCBankConfig edBankConfig = { 0, 0, 0 };
 
 byte _edBankAllowNoWait;
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBank.cpp
 void edBankTerm()
 {
 	edBankFilerRemove();
@@ -14,6 +15,7 @@ void edBankTerm()
 	return;
 }
 
+// Should be in: D:/projects/EdenLib/edBank/sources/edBank.cpp
 void edBankInit(void)
 {
 	//edBankDebug.initialize();
