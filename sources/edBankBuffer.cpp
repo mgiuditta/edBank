@@ -355,6 +355,9 @@ bool edCBankBufferEntry::get_info(int inFileIndex, edBANK_ENTRY_INFO* pBankEntry
 				}
 				else {
 					pBankEntryInfoOut->size = pFileHeader->size;
+#ifdef PLATFORM_WIN
+					pBankEntryInfoOut->size = GetModBankEntrySize(this->pFileHeader, inFileIndex, pFileHeader->size);
+#endif
 					pBankEntryInfoOut->crc = pFileHeader->crc;
 					returnFileBufferStart = this->pFileHeader->get_entry_data(inFileIndex);
 					pBankEntryInfoOut->fileBufferStart = returnFileBufferStart;
@@ -494,6 +497,9 @@ bool edCBankBufferEntry::close()
 			pBankBuff->flagB = pBankBuff->flagB - fileBuffer->sizePacked;
 			pBankBuff->nbBankBufferEntriesInUse = pBankBuff->nbBankBufferEntriesInUse + -1;
 			fileBuffer->apply_callback(pBankBuff->pBankCallback, 5);
+#ifdef PLATFORM_WIN
+			ReleaseModBankEntries(fileBuffer);
+#endif
 			memset(this, 0, sizeof(edCBankBufferEntry));
 			bSuccess = true;
 		}

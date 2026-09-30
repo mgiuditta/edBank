@@ -4,6 +4,12 @@
 
 #ifdef PLATFORM_WIN
 #include "port.h"
+#include "profiling.h"
+#include "mod_override.h"
+
+#include <fstream>
+#include <map>
+#include <new>
 #endif
 
 char FileBuffer[512] = { 0 };
@@ -441,9 +447,73 @@ char* edCBankFileHeader::get_entry_filename(int inIndex)
 }
 
 
+#ifdef PLATFORM_WIN
+struct ModBankEntry
+{
+	char* pData;
+	uint size;
+};
+
+// Loose-file overrides for bank entries, keyed by (header, entry index). A null pData caches a miss.
+// Loaded on first access, freed by ReleaseModBankEntries when the bank closes.
+static std::map<std::pair<const edCBankFileHeader*, int>, ModBankEntry> gModBankEntries;
+
+static const ModBankEntry* FindModBankEntry(edCBankFileHeader* pHeader, int fileIndex)
+{
+	if (!ModOverridesPresent()) {
+		return nullptr;
+	}
+
+	auto [it, bInserted] = gModBankEntries.try_emplace({ pHeader, fileIndex }, ModBankEntry{ nullptr, 0 });
+	if (bInserted) {
+		const std::string modPath = ModOverridePath(DebugFindFilePath(pHeader, fileIndex));
+		std::ifstream file(modPath, std::ios::binary | std::ios::ate);
+		const std::streamoff size = modPath.empty() ? -1 : static_cast<std::streamoff>(file.tellg());
+		if (file && size >= 0) {
+			char* pData = static_cast<char*>(::operator new(static_cast<size_t>(size) + 1, std::align_val_t(64)));
+			file.seekg(0);
+			file.read(pData, size);
+			TRACK_ALLOC(pData, size);
+			it->second = { pData, static_cast<uint>(size) };
+			IO_LOG(LogLevel::Warning, "Mod override: {} ({} bytes)", modPath, size);
+		}
+	}
+
+	return it->second.pData != nullptr ? &it->second : nullptr;
+}
+
+uint GetModBankEntrySize(edCBankFileHeader* pHeader, int fileIndex, uint originalSize)
+{
+	const ModBankEntry* pEntry = FindModBankEntry(pHeader, fileIndex);
+	return pEntry != nullptr ? pEntry->size : originalSize;
+}
+
+void ReleaseModBankEntries(edCBankFileHeader* pHeader)
+{
+	for (auto it = gModBankEntries.begin(); it != gModBankEntries.end();) {
+		if (it->first.first == pHeader) {
+			if (it->second.pData != nullptr) {
+				TRACK_FREE(it->second.pData);
+				::operator delete(it->second.pData, std::align_val_t(64));
+			}
+			it = gModBankEntries.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+}
+#endif
+
 char* edCBankFileHeader::get_entry_data(int fileIndex)
 {
 	char* pcVar1;
+
+#ifdef PLATFORM_WIN
+	if (const ModBankEntry* pModEntry = FindModBankEntry(this, fileIndex)) {
+		return pModEntry->pData;
+	}
+#endif
 
 	pcVar1 = (char*)0x0;
 
@@ -524,6 +594,12 @@ void edCBankFileHeader::apply_callback(edCBankCallback* pTypePairData, int mode)
 				NAME_NEXT_OBJECT(pFileName);
 
 				FileHeaderFileData* pFileHeaderData = (FileHeaderFileData*)(pFileHeaderStart + iVar4 + 8);
+#ifdef PLATFORM_WIN
+				if (const ModBankEntry* pModEntry = FindModBankEntry(this, uVar3)) {
+					puVar8->pFunction[mode](pModEntry->pData, pModEntry->size);
+				}
+				else
+#endif
 				puVar8->pFunction[mode](this->header + pFileHeaderData->offset - 8, pFileHeaderData->size);
 			}
 			uVar3 = uVar3 + 1;
